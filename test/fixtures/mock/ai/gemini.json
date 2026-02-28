@@ -1,0 +1,47 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": "Hello" }], "role": "model" },
+            "finishReason": null,
+            "index": 0
+          }
+        ],
+        "modelVersion": "gemini-2.0-flash"
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": ", world" }], "role": "model" },
+            "finishReason": null,
+            "index": 0
+          }
+        ],
+        "modelVersion": "gemini-2.0-flash"
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": "!" }], "role": "model" },
+            "finishReason": "STOP",
+            "index": 0
+          }
+        ],
+        "usageMetadata": { "promptTokenCount": 10, "candidatesTokenCount": 3, "totalTokenCount": 13 },
+        "modelVersion": "gemini-2.0-flash"
+      }
+    }
+  ]
+}

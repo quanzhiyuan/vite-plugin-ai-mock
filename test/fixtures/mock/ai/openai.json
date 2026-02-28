@@ -1,0 +1,59 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": "Hello" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": ", world" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": "!" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

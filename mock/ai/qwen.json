@@ -1,0 +1,69 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qw-001",
+        "object": "chat.completion.chunk",
+        "model": "qwen-plus",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qw-001",
+        "object": "chat.completion.chunk",
+        "model": "qwen-plus",
+        "choices": [{ "index": 0, "delta": { "content": "## What is Transformer?\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qw-001",
+        "object": "chat.completion.chunk",
+        "model": "qwen-plus",
+        "choices": [{ "index": 0, "delta": { "content": "Transformer is a neural network architecture based on the **Self-Attention** mechanism, proposed by Google in the 2017 paper *Attention Is All You Need*.\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qw-001",
+        "object": "chat.completion.chunk",
+        "model": "qwen-plus",
+        "choices": [{ "index": 0, "delta": { "content": "### Core Components\n\n1. **Multi-Head Attention** — Captures dependencies across different subspaces in parallel\n2. **Feed-Forward Network** — Applies non-linear transformations independently at each position\n3. **Positional Encoding** — Injects position information into the sequence\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qw-001",
+        "object": "chat.completion.chunk",
+        "model": "qwen-plus",
+        "choices": [{ "index": 0, "delta": { "content": "```\nInput → Embedding + Positional Encoding\n      → N × (Multi-Head Attention → Add&Norm → FFN → Add&Norm)\n      → Output\n```" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qw-001",
+        "object": "chat.completion.chunk",
+        "model": "qwen-plus",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

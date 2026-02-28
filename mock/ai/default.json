@@ -1,0 +1,7 @@
+{
+  "chunks": [
+    { "id": "1", "event": "message", "data": { "delta": "Hello" } },
+    { "id": "2", "event": "message", "data": { "delta": ", " } },
+    { "id": "3", "event": "message", "data": { "delta": "world!" } }
+  ]
+}

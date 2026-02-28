@@ -1,0 +1,69 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": "## TypeScript Generics\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": "Generics allow you to write **reusable, type-safe** functions and classes.\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": "```ts\nfunction identity<T>(value: T): T {\n  return value;\n}\n\n// Usage\nconst num = identity<number>(42);   // T = number\nconst str = identity(\"hello\");      // T inferred as string\n```\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": { "content": "### Constraints\n\n```ts\nfunction getLength<T extends { length: number }>(arg: T): number {\n  return arg.length;\n}\n```\n\n> Use `extends` to restrict `T` to types that have specific properties." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-001",
+        "object": "chat.completion.chunk",
+        "model": "gpt-4o",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

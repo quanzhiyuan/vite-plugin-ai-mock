@@ -1,0 +1,79 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "", "reasoning_content": null }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": { "reasoning_content": "The user wants to know the time complexity of bubble sort. Let me think through this carefully." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": { "reasoning_content": " Bubble sort has two nested loops, each running up to n iterations, giving O(n²) in the worst case. Best case with early termination is O(n)." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": { "content": "## Bubble Sort Complexity\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": { "content": "Bubble sort repeatedly swaps adjacent elements that are in the wrong order.\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": { "content": "| Case | Time | Space |\n|------|------|-------|\n| Best | O(n) | O(1) |\n| Average | O(n²) | O(1) |\n| Worst | O(n²) | O(1) |\n\n> **Note:** Best case requires an early-exit flag to detect an already-sorted array." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-dsr-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-reasoner",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "8",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

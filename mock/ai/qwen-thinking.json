@@ -1,0 +1,79 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "", "reasoning_content": null }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": { "reasoning_content": "The user is asking about the Fibonacci recurrence formula. This is a basic math problem." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": { "reasoning_content": " F(n) = F(n-1) + F(n-2), with base cases F(0)=0, F(1)=1. I should provide the definition, formula, and a short code example." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": { "content": "## Fibonacci Sequence\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": { "content": "**Recurrence Formula:**\n\n$$F(n) = F(n-1) + F(n-2), \\quad F(0)=0,\\ F(1)=1$$\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": { "content": "First 10 terms: `0, 1, 1, 2, 3, 5, 8, 13, 21, 34`\n\n```python\ndef fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n```" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-qwt-001",
+        "object": "chat.completion.chunk",
+        "model": "qwq-plus",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "8",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

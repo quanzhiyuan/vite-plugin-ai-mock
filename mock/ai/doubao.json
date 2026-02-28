@@ -1,0 +1,69 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-db-001",
+        "object": "chat.completion.chunk",
+        "model": "doubao-pro-32k",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-db-001",
+        "object": "chat.completion.chunk",
+        "model": "doubao-pro-32k",
+        "choices": [{ "index": 0, "delta": { "content": "## CSS Grid Layout Guide\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-db-001",
+        "object": "chat.completion.chunk",
+        "model": "doubao-pro-32k",
+        "choices": [{ "index": 0, "delta": { "content": "CSS Grid is a two-dimensional layout system that controls both **rows** and **columns**, ideal for complex page structures.\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-db-001",
+        "object": "chat.completion.chunk",
+        "model": "doubao-pro-32k",
+        "choices": [{ "index": 0, "delta": { "content": "### Basic Usage\n\n```css\n.container {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  grid-template-rows: auto;\n  gap: 16px;\n}\n```\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-db-001",
+        "object": "chat.completion.chunk",
+        "model": "doubao-pro-32k",
+        "choices": [{ "index": 0, "delta": { "content": "### Common Properties\n\n| Property | Function |\n|----------|----------|\n| `grid-template-columns` | Define columns count and width |\n| `grid-template-rows` | Define rows count and height |\n| `gap` | Row and column spacing |\n| `grid-area` | Child element area placement |\n\n> Tip: Works best with Flexbox: Grid for overall layout, Flex for local alignment." }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-db-001",
+        "object": "chat.completion.chunk",
+        "model": "doubao-pro-32k",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

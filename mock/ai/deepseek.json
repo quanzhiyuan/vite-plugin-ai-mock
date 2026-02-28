@@ -1,0 +1,69 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-ds-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-chat",
+        "choices": [{ "index": 0, "delta": { "role": "assistant", "content": "" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-ds-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-chat",
+        "choices": [{ "index": 0, "delta": { "content": "## Quick Sort\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-ds-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-chat",
+        "choices": [{ "index": 0, "delta": { "content": "Quick sort works by selecting a **pivot** element and partitioning the array:\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-ds-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-chat",
+        "choices": [{ "index": 0, "delta": { "content": "```python\ndef quick_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    mid  = [x for x in arr if x == pivot]\n    right= [x for x in arr if x > pivot]\n    return quick_sort(left) + mid + quick_sort(right)\n```\n\n" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-ds-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-chat",
+        "choices": [{ "index": 0, "delta": { "content": "| Case | Time Complexity |\n|------|-----------------|\n| Best | O(n log n) |\n| Average | O(n log n) |\n| Worst | O(n²) |" }, "finish_reason": null }]
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "id": "chatcmpl-ds-001",
+        "object": "chat.completion.chunk",
+        "model": "deepseek-chat",
+        "choices": [{ "index": 0, "delta": {}, "finish_reason": "stop" }]
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": "[DONE]"
+    }
+  ]
+}

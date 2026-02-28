@@ -1,0 +1,61 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": "## Async/Await in JavaScript\n\n" }], "role": "model" },
+            "finishReason": null,
+            "index": 0
+          }
+        ],
+        "modelVersion": "gemini-2.0-flash"
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": "`async/await` is syntactic sugar over Promises, making asynchronous code read like synchronous code.\n\n" }], "role": "model" },
+            "finishReason": null,
+            "index": 0
+          }
+        ],
+        "modelVersion": "gemini-2.0-flash"
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": "```js\nasync function fetchUser(id) {\n  try {\n    const res = await fetch(`/api/users/${id}`);\n    if (!res.ok) throw new Error(`HTTP ${res.status}`);\n    return await res.json();\n  } catch (err) {\n    console.error('Failed:', err);\n  }\n}\n```\n\n" }], "role": "model" },
+            "finishReason": null,
+            "index": 0
+          }
+        ],
+        "modelVersion": "gemini-2.0-flash"
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "candidates": [
+          {
+            "content": { "parts": [{ "text": "### Key Rules\n\n- `await` can only be used inside an `async` function\n- `await` pauses execution **within the function only**\n- Errors propagate via `try/catch` or `.catch()` on the returned Promise\n\n| Pattern | Use when |\n|---------|----------|\n| `await` sequentially | Each call depends on the previous |\n| `Promise.all([...])` | Independent parallel calls |" }], "role": "model" },
+            "finishReason": "STOP",
+            "index": 0
+          }
+        ],
+        "usageMetadata": { "promptTokenCount": 18, "candidatesTokenCount": 110, "totalTokenCount": 128 },
+        "modelVersion": "gemini-2.0-flash"
+      }
+    }
+  ]
+}
