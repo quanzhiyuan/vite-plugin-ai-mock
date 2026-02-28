@@ -2,6 +2,12 @@
 
 > English | [中文](./README.zh-CN.md)
 
+[![npm version](https://img.shields.io/npm/v/vite-plugin-ai-mock?color=4fc08d)](https://www.npmjs.com/package/vite-plugin-ai-mock)
+[![node version](https://img.shields.io/node/v/vite-plugin-ai-mock?color=4fc08d)](https://nodejs.org)
+[![vite peer](https://img.shields.io/badge/vite-%3E%3D5.0.0-646cff)](https://vitejs.dev)
+[![CI](https://img.shields.io/github/actions/workflow/status/quanzhiyuan/vite-plugin-ai-mock/ci.yml?label=CI)](https://github.com/quanzhiyuan/vite-plugin-ai-mock/actions)
+[![license](https://img.shields.io/npm/l/vite-plugin-ai-mock)](./LICENSE)
+
 A standalone Vite plugin for AI scene mocking. Returns streaming data in JSON format, simulating various AI scenarios.
 
 - Reads mock files from `mock/ai/*.json`
@@ -63,6 +69,17 @@ Append parameters directly to the request URL, useful for debugging a single end
 /api/ai/mock/default?firstChunkDelayMs=1000&errorAt=3
 ```
 
+```ts
+const response = await fetch("/api/ai/mock/default?firstChunkDelayMs=4800", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+  },
+  body: JSON.stringify({}),
+});
+```
+
 **2. Plugin option `defaultScenario` (global)**
 
 Configure in `vite.config.ts` to apply to all mock requests. URL parameters take precedence and override this:
@@ -70,7 +87,7 @@ Configure in `vite.config.ts` to apply to all mock requests. URL parameters take
 ```ts
 aiMockPlugin({
   defaultScenario: {
-    scenario: "jitter",        // Use a preset scenario name
+    scenario: "jitter", // Use a preset scenario name
     // Individual options override the preset's corresponding values:
     firstChunkDelayMs: 500,
     minIntervalMs: 100,
@@ -108,7 +125,18 @@ Each file is a JSON object with a `chunks` array. Every chunk maps to one SSE ev
 
 ### Real-world format examples
 
-The `data` field can mirror any real API response. Built-in examples are available in `mock/ai/`:
+The `data` field can mirror any real API response. The package ships with ready-to-use examples in `mock/ai/` — copy them into your project as a starting point:
+
+| File | Provider |
+| --- | --- |
+| `mock/ai/openai.json` | OpenAI / compatible |
+| `mock/ai/claude.json` | Anthropic Claude |
+| `mock/ai/gemini.json` | Google Gemini |
+| `mock/ai/deepseek.json` | DeepSeek |
+| `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner |
+| `mock/ai/qwen.json` | Qwen (Alibaba) |
+| `mock/ai/qwen-thinking.json` | Qwen Thinking |
+| `mock/ai/doubao.json` | Doubao (ByteDance) |
 
 **OpenAI / compatible** (`openai.json`) — `data` ends with `"[DONE]"` string:
 

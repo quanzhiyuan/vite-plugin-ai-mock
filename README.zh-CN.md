@@ -63,6 +63,17 @@ export default defineConfig({
 /api/ai/mock/default?firstChunkDelayMs=1000&errorAt=3
 ```
 
+```ts
+const response = await fetch("/api/ai/mock/default?firstChunkDelayMs=4800", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+  },
+  body: JSON.stringify({}),
+});
+```
+
 **2. 插件选项 `defaultScenario`（全局生效）**
 
 在 `vite.config.ts` 中配置，对所有 mock 请求生效，可被 URL 参数覆盖：
@@ -108,7 +119,18 @@ aiMockPlugin({
 
 ### 主流格式示例
 
-`data` 字段可以完整模拟真实 API 的响应结构，内置示例文件位于 `mock/ai/`：
+`data` 字段可以完整模拟真实 API 的响应结构。npm 包内置了以下示例文件（位于 `mock/ai/`），可直接复制到项目中使用：
+
+| 文件 | 提供商 |
+| --- | --- |
+| `mock/ai/openai.json` | OpenAI / 兼容格式 |
+| `mock/ai/claude.json` | Anthropic Claude |
+| `mock/ai/gemini.json` | Google Gemini |
+| `mock/ai/deepseek.json` | DeepSeek |
+| `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner |
+| `mock/ai/qwen.json` | 通义千问（阿里） |
+| `mock/ai/qwen-thinking.json` | 通义千问 Thinking |
+| `mock/ai/doubao.json` | 豆包（字节跳动） |
 
 **OpenAI / 兼容格式**（`openai.json`）——最后一条 `data` 为字符串 `"[DONE]"`：
 

@@ -16,6 +16,7 @@
   },
   "files": [
     "dist",
+    "mock",
     "README.md",
     "README.zh-CN.md",
     "LICENSE"
@@ -27,6 +28,14 @@
     "sse",
     "ai"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quanzhiyuan/vite-plugin-ai-mock"
+  },
+  "homepage": "https://github.com/quanzhiyuan/vite-plugin-ai-mock#readme",
+  "bugs": {
+    "url": "https://github.com/quanzhiyuan/vite-plugin-ai-mock/issues"
+  },
   "engines": {
     "node": ">=18"
   },
