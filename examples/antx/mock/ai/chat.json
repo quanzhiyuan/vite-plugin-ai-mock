@@ -1,0 +1,80 @@
+{
+  "chunks": [
+    {
+      "id": "1",
+      "event": "message",
+      "data": {
+        "type": "start"
+      }
+    },
+    {
+      "id": "2",
+      "event": "message",
+      "data": {
+        "type": "text-start",
+        "id": "t1"
+      }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": {
+        "type": "text-delta",
+        "id": "t1",
+        "delta": "# vite-plugin-ai-mock\n\n"
+      }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": {
+        "type": "text-delta",
+        "id": "t1",
+        "delta": "**vite-plugin-ai-mock** is a standalone Vite plugin designed for mocking AI streaming responses. It allows developers to simulate various AI interaction scenarios without relying on a real backend.\n\n"
+      }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": {
+        "type": "text-delta",
+        "id": "t1",
+        "delta": "## Key Features\n\n- 🚀 **Easy Integration**: seamless setup with Vite.\n- 📡 **Streaming Support**: built-in support for Server-Sent Events (SSE) and JSON.\n- 🎭 **Scenario Simulation**: supports 11+ scenarios like network jitter, timeouts, and errors.\n- 🛠 **Configurable**: customize via URL parameters or plugin options.\n\n"
+      }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": {
+        "type": "text-delta",
+        "id": "t1",
+        "delta": "## Usage\n\nInstall the plugin:\n\n```bash\nnpm i vite-plugin-ai-mock -D\n```\n\nConfigure in `vite.config.ts`:\n\n```ts\nimport { aiMockPlugin } from \"vite-plugin-ai-mock\";\n\nexport default {\n  plugins: [\n    aiMockPlugin({\n      dataDir: \"mock/ai\",\n      endpoint: \"/api/ai/mock\",\n    }),\n  ],\n};\n```\n\n"
+      }
+    },
+    {
+      "id": "7",
+      "event": "message",
+      "data": {
+        "type": "text-delta",
+        "id": "t1",
+        "delta": "## Supported Scenarios\n\n| Scenario | Description |\n|----------|-------------|\n| `normal` | Standard response (default) |\n| `jitter` | Simulates network latency variation |\n| `error` | Injects errors at specific points |\n| `timeout` | Simulates request timeouts |\n| `disconnect` | Simulates connection drops |\n\n"
+      }
+    },
+    {
+      "id": "8",
+      "event": "message",
+      "data": {
+        "type": "text-end",
+        "id": "t1"
+      }
+    },
+    {
+      "id": "9",
+      "event": "message",
+      "data": {
+        "type": "finish",
+        "finishReason": "stop"
+      }
+    }
+  ]
+}

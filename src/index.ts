@@ -69,7 +69,9 @@ const SCENARIO_PRESETS = {
 
 export type ScenarioName = keyof typeof SCENARIO_PRESETS;
 
-export interface DefaultScenarioConfig extends Partial<Omit<ScenarioOptions, 'file' | 'lastEventId' | 'includeDone'>> {
+export interface DefaultScenarioConfig extends Partial<
+  Omit<ScenarioOptions, "file" | "lastEventId" | "includeDone">
+> {
   scenario?: ScenarioName;
 }
 
@@ -142,9 +144,10 @@ function parseScenarioOptions(
   const params = reqUrl.searchParams;
 
   // Determine effective scenario: URL param > defaultScenario.scenario > none
-  const presetName = (params.get("scenario") as ScenarioName | null)
-    ?? defaultScenario?.scenario;
-  const preset = presetName ? SCENARIO_PRESETS[presetName] ?? {} : {};
+  const presetName =
+    (params.get("scenario") as ScenarioName | null) ??
+    defaultScenario?.scenario;
+  const preset = presetName ? (SCENARIO_PRESETS[presetName] ?? {}) : {};
 
   // Helper to get value from URL param > defaultScenario > preset
   const getParam = (
@@ -153,10 +156,14 @@ function parseScenarioOptions(
   ): number | string | boolean => {
     const paramValue = params.get(String(paramName));
     if (paramValue !== null) {
-      return typeof fallback === "number" ? clampPositiveInt(paramValue, fallback) : paramValue;
+      return typeof fallback === "number"
+        ? clampPositiveInt(paramValue, fallback)
+        : paramValue;
     }
     if (defaultScenario && paramName in defaultScenario) {
-      return defaultScenario[paramName as keyof DefaultScenarioConfig] ?? fallback;
+      return (
+        defaultScenario[paramName as keyof DefaultScenarioConfig] ?? fallback
+      );
     }
     const presetValue = (preset as Record<string, unknown>)[String(paramName)];
     if (presetValue !== undefined) {
@@ -179,7 +186,7 @@ function parseScenarioOptions(
     stallMs: getParam("stallMs", 30_000) as number,
     httpErrorStatus: clampPositiveInt(params.get("httpErrorStatus"), 0),
     errorAt: getParam("errorAt", -1) as number,
-    errorMessage: (getParam("errorMessage", "mock_error") as string),
+    errorMessage: getParam("errorMessage", "mock_error") as string,
     malformedAt: getParam("malformedAt", -1) as number,
     duplicateAt: getParam("duplicateAt", -1) as number,
     outOfOrder:
@@ -196,13 +203,19 @@ function parseScenarioOptions(
   };
 }
 
-function getResumeIndex(chunks: NormalizedChunk[], lastEventId: string | null): number {
+function getResumeIndex(
+  chunks: NormalizedChunk[],
+  lastEventId: string | null,
+): number {
   if (!lastEventId) return 0;
   const hitIndex = chunks.findIndex((chunk) => chunk.id === lastEventId);
   return hitIndex >= 0 ? hitIndex + 1 : 0;
 }
 
-function applyChunkMutations(chunks: NormalizedChunk[], options: ScenarioOptions): NormalizedChunk[] {
+function applyChunkMutations(
+  chunks: NormalizedChunk[],
+  options: ScenarioOptions,
+): NormalizedChunk[] {
   let result = chunks.map((item) => ({ ...item }));
 
   if (options.reconnect && options.lastEventId) {
@@ -220,13 +233,19 @@ function applyChunkMutations(chunks: NormalizedChunk[], options: ScenarioOptions
 
   if (options.duplicateAt > 0 && options.duplicateAt <= result.length) {
     const index = options.duplicateAt - 1;
-    result.splice(index + 1, 0, { ...result[index], id: `${result[index].id}-dup` });
+    result.splice(index + 1, 0, {
+      ...result[index],
+      id: `${result[index].id}-dup`,
+    });
   }
 
   return result;
 }
 
-function isSseRequest(req: { headers: Record<string, string | string[] | undefined> }, reqUrl: URL): boolean {
+function isSseRequest(
+  req: { headers: Record<string, string | string[] | undefined> },
+  reqUrl: URL,
+): boolean {
   const accept = String(req.headers.accept ?? "");
   const transport = reqUrl.searchParams.get("transport");
   return accept.includes("text/event-stream") || transport === "sse";
@@ -239,9 +258,13 @@ function writeSseEvent(
   options: { id?: string; event?: string; data: unknown },
 ): void {
   if (options.id) res.write(`id: ${options.id}\n`);
-  if (options.event && options.event !== "message") res.write(`event: ${options.event}\n`);
+  if (options.event && options.event !== "message")
+    res.write(`event: ${options.event}\n`);
 
-  const payload = typeof options.data === "string" ? options.data : JSON.stringify(options.data ?? null);
+  const payload =
+    typeof options.data === "string"
+      ? options.data
+      : JSON.stringify(options.data ?? null);
   const lines = payload.split("\n");
   for (const line of lines) {
     res.write(`data: ${line}\n`);
@@ -253,7 +276,10 @@ interface EndpointMatchResult {
   fileFromPath: string;
 }
 
-function matchEndpoint(pathname: string, endpoint: EndpointPattern): EndpointMatchResult | null {
+function matchEndpoint(
+  pathname: string,
+  endpoint: EndpointPattern,
+): EndpointMatchResult | null {
   if (Array.isArray(endpoint)) {
     for (const item of endpoint) {
       const result = matchEndpoint(pathname, item);
@@ -263,7 +289,8 @@ function matchEndpoint(pathname: string, endpoint: EndpointPattern): EndpointMat
   }
   if (typeof endpoint === "string") {
     if (pathname === endpoint) return { fileFromPath: "" };
-    if (pathname.startsWith(`${endpoint}/`)) return { fileFromPath: pathname.slice(endpoint.length + 1) };
+    if (pathname.startsWith(`${endpoint}/`))
+      return { fileFromPath: pathname.slice(endpoint.length + 1) };
     return null;
   }
   // RegExp: fileFromPath falls back to empty string, relies on ?file= param
@@ -282,28 +309,58 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
         if (!req.url) return next();
         const reqUrl = new URL(req.url, "http://localhost");
         const matched = matchEndpoint(reqUrl.pathname, endpoint);
+
+        if (req.url.startsWith("/api")) {
+          console.log("[aiMockPlugin] Request:", req.method, req.url);
+          console.log("[aiMockPlugin] Configured endpoint:", endpoint);
+          console.log("[aiMockPlugin] Matched:", matched);
+        }
+
         if (matched === null) return next();
         const fileFromPath = matched.fileFromPath;
 
         const lastEventIdHeader =
-          typeof req.headers["last-event-id"] === "string" ? req.headers["last-event-id"] : undefined;
+          typeof req.headers["last-event-id"] === "string"
+            ? req.headers["last-event-id"]
+            : undefined;
 
-        const options = parseScenarioOptions(reqUrl, lastEventIdHeader, defaultScenario);
+        const options = parseScenarioOptions(
+          reqUrl,
+          lastEventIdHeader,
+          defaultScenario,
+        );
         if (fileFromPath) options.file = fileFromPath;
 
         try {
           if (options.httpErrorStatus >= 400) {
+            console.log(
+              "[aiMockPlugin] Returning HTTP error:",
+              options.httpErrorStatus,
+            );
             res.statusCode = options.httpErrorStatus;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
-            res.end(JSON.stringify({ error: "http_error", status: options.httpErrorStatus }));
+            res.end(
+              JSON.stringify({
+                error: "http_error",
+                status: options.httpErrorStatus,
+              }),
+            );
             return;
           }
 
           const filePath = resolveDataFile(dataDir, options.file);
+          console.log("[aiMockPlugin] Resolving mock file:", filePath);
+
+          if (!fs.existsSync(filePath)) {
+            console.error("[aiMockPlugin] Mock file not found:", filePath);
+            // Let it throw or handle it
+          }
+
           const raw = readJsonFile(filePath);
           const chunks = applyChunkMutations(normalizeChunks(raw), options);
 
           if (!isSseRequest(req, reqUrl)) {
+            console.log("[aiMockPlugin] Handling as JSON response");
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
             res.end(
@@ -318,6 +375,7 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
             return;
           }
 
+          console.log("[aiMockPlugin] Handling as SSE stream");
           res.statusCode = 200;
           res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
           res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -416,7 +474,11 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
             const interval =
               typeof nextChunk.delayMs === "number"
                 ? nextChunk.delayMs
-                : options.minIntervalMs + Math.floor(Math.random() * (options.maxIntervalMs - options.minIntervalMs + 1));
+                : options.minIntervalMs +
+                  Math.floor(
+                    Math.random() *
+                      (options.maxIntervalMs - options.minIntervalMs + 1),
+                  );
 
             schedule(() => writeChunk(nextChunk, index + 1), interval);
           };

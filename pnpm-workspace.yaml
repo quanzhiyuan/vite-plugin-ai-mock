@@ -1,0 +1,5 @@
+packages:
+  - .
+  - examples/*
+
+registry: https://registry.npmmirror.com
