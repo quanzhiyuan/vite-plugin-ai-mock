@@ -78,6 +78,8 @@ export default defineConfig({
 </tr>
 </table>
 
+> 💡 查看完整示例：[examples](https://github.com/quanzhiyuan/vite-plugin-ai-mock/tree/main/examples)（包含 Ant Design X、Assistant UI、Lobe Chat 等集成示例）
+
 ## 场景（11 种）
 
 1. 正常完成（默认）

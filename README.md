@@ -84,6 +84,8 @@ export default defineConfig({
 </tr>
 </table>
 
+> 💡 See full examples: [examples](https://github.com/quanzhiyuan/vite-plugin-ai-mock/tree/main/examples) (includes Ant Design X, Assistant UI, Lobe Chat integrations)
+
 ## Scenarios (11)
 
 1. Normal completion (default)
