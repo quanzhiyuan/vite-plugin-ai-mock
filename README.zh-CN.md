@@ -12,7 +12,7 @@
 ## 安装
 
 ```bash
-npm i vite-plugin-ai-mock -D
+pnpm add vite-plugin-ai-mock -D
 ```
 
 ## 使用
@@ -25,7 +25,7 @@ export default defineConfig({
   plugins: [
     aiMockPlugin({
       dataDir: "mock/ai",
-      endpoint: "/api/ai/mock",
+      endpoint: "/api/mock/ai",
     }),
   ],
 });
@@ -59,12 +59,12 @@ export default defineConfig({
 直接在请求 URL 上附加参数，适合临时调试单个接口：
 
 ```
-/api/ai/mock/default?scenario=jitter
-/api/ai/mock/default?firstChunkDelayMs=1000&errorAt=3
+/api/mock/ai/default?scenario=jitter
+/api/mock/ai/default?firstChunkDelayMs=1000&errorAt=3
 ```
 
 ```ts
-const response = await fetch("/api/ai/mock/default?firstChunkDelayMs=4800", {
+const response = await fetch("/api/mock/ai/default?firstChunkDelayMs=4800", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -121,16 +121,16 @@ aiMockPlugin({
 
 `data` 字段可以完整模拟真实 API 的响应结构。npm 包内置了以下示例文件（位于 `mock/ai/`），可直接复制到项目中使用：
 
-| 文件 | 提供商 |
-| --- | --- |
-| `mock/ai/openai.json` | OpenAI / 兼容格式 |
-| `mock/ai/claude.json` | Anthropic Claude |
-| `mock/ai/gemini.json` | Google Gemini |
-| `mock/ai/deepseek.json` | DeepSeek |
+| 文件                             | 提供商            |
+| -------------------------------- | ----------------- |
+| `mock/ai/openai.json`            | OpenAI / 兼容格式 |
+| `mock/ai/claude.json`            | Anthropic Claude  |
+| `mock/ai/gemini.json`            | Google Gemini     |
+| `mock/ai/deepseek.json`          | DeepSeek          |
 | `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner |
-| `mock/ai/qwen.json` | 通义千问（阿里） |
-| `mock/ai/qwen-thinking.json` | 通义千问 Thinking |
-| `mock/ai/doubao.json` | 豆包（字节跳动） |
+| `mock/ai/qwen.json`              | 通义千问（阿里）  |
+| `mock/ai/qwen-thinking.json`     | 通义千问 Thinking |
+| `mock/ai/doubao.json`            | 豆包（字节跳动）  |
 
 **OpenAI / 兼容格式**（`openai.json`）——最后一条 `data` 为字符串 `"[DONE]"`：
 
@@ -179,6 +179,58 @@ aiMockPlugin({
 }
 ```
 
+**AI SDK `useChat`**——兼容 `@ai-sdk/react` 的 `useChat` hook：
+
+```json
+{
+  "chunks": [
+    { "id": "1", "event": "message", "data": { "type": "start" } },
+    {
+      "id": "2",
+      "event": "message",
+      "data": { "type": "text-start", "id": "t1" }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": { "type": "text-delta", "id": "t1", "delta": "Hello" }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": { "type": "text-delta", "id": "t1", "delta": ", world!" }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": { "type": "text-end", "id": "t1" }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": { "type": "finish", "finishReason": "stop" }
+    }
+  ]
+}
+```
+
+配合 `useChat` 使用：
+
+```tsx
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+
+const { messages, sendMessage, status } = useChat({
+  transport: new DefaultChatTransport({
+    api: "/api/mock/ai/chat",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+  }),
+});
+```
+
 ## 接口地址
 
 `endpoint` 支持 `string`、`RegExp` 或 `(string | RegExp)[]`。
@@ -191,10 +243,10 @@ aiMockPlugin({
 
 ```ts
 // string（默认）
-endpoint: "/api/ai/mock";
-// /api/ai/mock        → file = "default"
-// /api/ai/mock/chat   → file = "chat"
-// /api/ai/mock/deepseek   → file = "deepseek"
+endpoint: "/api/mock/ai";
+// /api/mock/ai        → file = "default"
+// /api/mock/ai/chat   → file = "chat"
+// /api/mock/ai/deepseek   → file = "deepseek"
 
 // RegExp
 endpoint: /^\/api\/ai\/.*/;
@@ -204,26 +256,26 @@ endpoint: /^\/api\/ai\/.*/;
 endpoint: ["/api/chat", /^\/v2\/ai\/.*/];
 ```
 
-- `/api/ai/mock`
-- `/api/ai/mock/<file>`
+- `/api/mock/ai`
+- `/api/mock/ai/<file>`
 - `?file=<file>`
 
 ## 测试
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## 构建
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ## 发布
 
 ```bash
-npm run release:npm
+pnpm release:npm
 ```
 
 `prepublishOnly` 会自动执行构建、测试和类型检查。

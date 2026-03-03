@@ -18,7 +18,7 @@ A standalone Vite plugin for AI scene mocking. Returns streaming data in JSON fo
 ## Install
 
 ```bash
-npm i vite-plugin-ai-mock -D
+pnpm add vite-plugin-ai-mock -D
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ export default defineConfig({
   plugins: [
     aiMockPlugin({
       dataDir: "mock/ai",
-      endpoint: "/api/ai/mock",
+      endpoint: "/api/mock/ai",
     }),
   ],
 });
@@ -65,12 +65,12 @@ Scenarios can be configured in two ways, in order of precedence:
 Append parameters directly to the request URL, useful for debugging a single endpoint:
 
 ```
-/api/ai/mock/default?scenario=jitter
-/api/ai/mock/default?firstChunkDelayMs=1000&errorAt=3
+/api/mock/ai/default?scenario=jitter
+/api/mock/ai/default?firstChunkDelayMs=1000&errorAt=3
 ```
 
 ```ts
-const response = await fetch("/api/ai/mock/default?firstChunkDelayMs=4800", {
+const response = await fetch("/api/mock/ai/default?firstChunkDelayMs=4800", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -127,16 +127,16 @@ Each file is a JSON object with a `chunks` array. Every chunk maps to one SSE ev
 
 The `data` field can mirror any real API response. The package ships with ready-to-use examples in `mock/ai/` — copy them into your project as a starting point:
 
-| File | Provider |
-| --- | --- |
-| `mock/ai/openai.json` | OpenAI / compatible |
-| `mock/ai/claude.json` | Anthropic Claude |
-| `mock/ai/gemini.json` | Google Gemini |
-| `mock/ai/deepseek.json` | DeepSeek |
-| `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner |
-| `mock/ai/qwen.json` | Qwen (Alibaba) |
-| `mock/ai/qwen-thinking.json` | Qwen Thinking |
-| `mock/ai/doubao.json` | Doubao (ByteDance) |
+| File                             | Provider            |
+| -------------------------------- | ------------------- |
+| `mock/ai/openai.json`            | OpenAI / compatible |
+| `mock/ai/claude.json`            | Anthropic Claude    |
+| `mock/ai/gemini.json`            | Google Gemini       |
+| `mock/ai/deepseek.json`          | DeepSeek            |
+| `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner   |
+| `mock/ai/qwen.json`              | Qwen (Alibaba)      |
+| `mock/ai/qwen-thinking.json`     | Qwen Thinking       |
+| `mock/ai/doubao.json`            | Doubao (ByteDance)  |
 
 **OpenAI / compatible** (`openai.json`) — `data` ends with `"[DONE]"` string:
 
@@ -185,6 +185,58 @@ The `data` field can mirror any real API response. The package ships with ready-
 }
 ```
 
+**AI SDK `useChat`** — compatible with `@ai-sdk/react` `useChat` hook:
+
+```json
+{
+  "chunks": [
+    { "id": "1", "event": "message", "data": { "type": "start" } },
+    {
+      "id": "2",
+      "event": "message",
+      "data": { "type": "text-start", "id": "t1" }
+    },
+    {
+      "id": "3",
+      "event": "message",
+      "data": { "type": "text-delta", "id": "t1", "delta": "Hello" }
+    },
+    {
+      "id": "4",
+      "event": "message",
+      "data": { "type": "text-delta", "id": "t1", "delta": ", world!" }
+    },
+    {
+      "id": "5",
+      "event": "message",
+      "data": { "type": "text-end", "id": "t1" }
+    },
+    {
+      "id": "6",
+      "event": "message",
+      "data": { "type": "finish", "finishReason": "stop" }
+    }
+  ]
+}
+```
+
+Usage with `useChat`:
+
+```tsx
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+
+const { messages, sendMessage, status } = useChat({
+  transport: new DefaultChatTransport({
+    api: "/api/mock/ai/chat",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+  }),
+});
+```
+
 ## Endpoint
 
 `endpoint` accepts a `string`, `RegExp`, or `(string | RegExp)[]`.
@@ -197,10 +249,10 @@ The `data` field can mirror any real API response. The package ships with ready-
 
 ```ts
 // string (default)
-endpoint: "/api/ai/mock";
-// /api/ai/mock        → file = "default"
-// /api/ai/mock/chat   → file = "chat"
-// /api/ai/mock/deepseek   → file = "deepseek"
+endpoint: "/api/mock/ai";
+// /api/mock/ai        → file = "default"
+// /api/mock/ai/chat   → file = "chat"
+// /api/mock/ai/deepseek   → file = "deepseek"
 
 // RegExp
 endpoint: /^\/api\/ai\/.*/;
@@ -210,26 +262,26 @@ endpoint: /^\/api\/ai\/.*/;
 endpoint: ["/api/chat", /^\/v2\/ai\/.*/];
 ```
 
-- `/api/ai/mock`
-- `/api/ai/mock/<file>`
+- `/api/mock/ai`
+- `/api/mock/ai/<file>`
 - `?file=<file>`
 
 ## Test
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## Build
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ## Publish
 
 ```bash
-npm run release:npm
+pnpm release:npm
 ```
 
 `prepublishOnly` will automatically run build, tests and typecheck..
