@@ -23,6 +23,36 @@ pnpm add vite-plugin-ai-mock -D
 
 ## Usage
 
+<table>
+<tr>
+<td width="35%" valign="top">
+
+**Directory Structure**
+
+```
+project/
+├── mock/
+│   └── ai/
+│       ├── chat.json
+│       └── default.json
+├── src/
+└── vite.config.ts
+
+
+
+
+
+
+
+
+
+```
+
+</td>
+<td width="65%" valign="top">
+
+**vite.config.ts**
+
 ```ts
 import { defineConfig } from "vite";
 import { aiMockPlugin } from "vite-plugin-ai-mock";
@@ -31,11 +61,28 @@ export default defineConfig({
   plugins: [
     aiMockPlugin({
       dataDir: "mock/ai",
-      endpoint: "/api/mock/ai",
+      endpoint: "/api/mock/ai",  // /api/mock/ai/chat → chat.json
     }),
   ],
 });
 ```
+
+**mock/ai/chat.json**
+
+```json
+{
+  "chunks": [
+    { "id": "1", "data": { "type": "start" } },
+    { "id": "2", "data": { "type": "text-delta", "delta": "Hello" } },
+    { "id": "3", "data": { "type": "text-delta", "delta": " World!" } },
+    { "id": "4", "data": { "type": "finish" } }
+  ]
+}
+```
+
+</td>
+</tr>
+</table>
 
 ## Scenarios (11)
 
