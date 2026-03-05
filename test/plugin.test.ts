@@ -65,8 +65,8 @@ describe("endpoint: RegExp", () => {
     await s.close();
   });
 
-  it("matches path via RegExp and returns JSON", async () => {
-    const res = await fetch(`${url}/api/ai/anything?file=default`);
+  it("matches path via RegExp and returns JSON with transport=json", async () => {
+    const res = await fetch(`${url}/api/ai/anything?file=default&transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.mode).toBe("json");
@@ -92,7 +92,7 @@ describe("endpoint: array", () => {
   });
 
   it("matches first string item with fileFromPath", async () => {
-    const res = await fetch(`${url}/api/chat/default`);
+    const res = await fetch(`${url}/api/chat/default?transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.mode).toBe("json");
@@ -100,7 +100,7 @@ describe("endpoint: array", () => {
   });
 
   it("matches second RegExp item via ?file=", async () => {
-    const res = await fetch(`${url}/v2/ai/stream?file=default`);
+    const res = await fetch(`${url}/v2/ai/stream?file=default&transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.mode).toBe("json");
@@ -114,8 +114,17 @@ describe("endpoint: array", () => {
 });
 
 describe("aiMockPlugin", () => {
-  it("returns JSON mode by default", async () => {
-    const res = await fetch(`${baseUrl}/api/ai/mock/default`);
+  it("returns SSE mode by default", async () => {
+    const res = await fetch(`${baseUrl}/api/ai/mock/default?minIntervalMs=0&maxIntervalMs=0`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type") || "").toContain("text/event-stream");
+    const text = await res.text();
+    expect(text).toContain("id: 1");
+    expect(text).toContain("data: {\"delta\":\"hello\"}");
+  });
+
+  it("returns JSON mode with transport=json", async () => {
+    const res = await fetch(`${baseUrl}/api/ai/mock/default?transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.mode).toBe("json");

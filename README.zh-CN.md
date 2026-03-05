@@ -5,8 +5,8 @@
 > [English](./README.md) | 中文
 
 - 从 `mock/ai/*.json` 读取 mock 文件
-- 当请求为 SSE（`Accept: text/event-stream` 或 `?transport=sse`）时自动返回 SSE
-- 非 SSE 请求返回 JSON
+- 默认返回 SSE 流式响应
+- 使用 `?transport=json` 获取 JSON 格式响应
 - 支持 11 种流式场景，通过请求参数控制
 
 ## 安装
@@ -113,14 +113,15 @@ export default defineConfig({
 ```
 
 ```ts
+// 默认返回 SSE 流式响应
 const response = await fetch("/api/mock/ai/default?firstChunkDelayMs=4800", {
   method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "text/event-stream",
-  },
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({}),
 });
+
+// 使用 ?transport=json 获取 JSON 格式
+const jsonResponse = await fetch("/api/mock/ai/default?transport=json");
 ```
 
 **2. 插件选项 `defaultScenario`（全局生效）**
@@ -272,10 +273,6 @@ import { DefaultChatTransport } from "ai";
 const { messages, sendMessage, status } = useChat({
   transport: new DefaultChatTransport({
     api: "/api/mock/ai/chat",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-    },
   }),
 });
 ```

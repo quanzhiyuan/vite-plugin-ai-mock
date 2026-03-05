@@ -11,8 +11,8 @@
 A standalone Vite plugin for AI scene mocking. Returns streaming data in JSON format, simulating various AI scenarios.
 
 - Reads mock files from `mock/ai/*.json`
-- Auto returns SSE when request is SSE (`Accept: text/event-stream` or `?transport=sse`)
-- Returns JSON for non-SSE calls
+- Returns SSE streaming response by default
+- Use `?transport=json` to get JSON format response
 - Supports 11 streaming scenarios with request parameters
 
 ## Install
@@ -119,14 +119,15 @@ Append parameters directly to the request URL, useful for debugging a single end
 ```
 
 ```ts
+// Default returns SSE streaming response
 const response = await fetch("/api/mock/ai/default?firstChunkDelayMs=4800", {
   method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "text/event-stream",
-  },
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({}),
 });
+
+// Use ?transport=json to get JSON format
+const jsonResponse = await fetch("/api/mock/ai/default?transport=json");
 ```
 
 **2. Plugin option `defaultScenario` (global)**
@@ -278,10 +279,6 @@ import { DefaultChatTransport } from "ai";
 const { messages, sendMessage, status } = useChat({
   transport: new DefaultChatTransport({
     api: "/api/mock/ai/chat",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-    },
   }),
 });
 ```

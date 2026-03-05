@@ -242,13 +242,10 @@ function applyChunkMutations(
   return result;
 }
 
-function isSseRequest(
-  req: { headers: Record<string, string | string[] | undefined> },
-  reqUrl: URL,
-): boolean {
-  const accept = String(req.headers.accept ?? "");
+function isSseRequest(reqUrl: URL): boolean {
   const transport = reqUrl.searchParams.get("transport");
-  return accept.includes("text/event-stream") || transport === "sse";
+  // Default to SSE, only use JSON when explicitly requested via transport=json
+  return transport !== "json";
 }
 
 function writeSseEvent(
@@ -359,7 +356,7 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
           const raw = readJsonFile(filePath);
           const chunks = applyChunkMutations(normalizeChunks(raw), options);
 
-          if (!isSseRequest(req, reqUrl)) {
+          if (!isSseRequest(reqUrl)) {
             console.log("[aiMockPlugin] Handling as JSON response");
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
