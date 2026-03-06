@@ -69,8 +69,8 @@ describe("endpoint: RegExp", () => {
     const res = await fetch(`${url}/api/ai/anything?file=default&transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.mode).toBe("json");
-    expect(body.total).toBe(3);
+    expect(body.chunks).toHaveLength(3);
+    expect(body.chunks[0].data.delta).toBe("hello");
   });
 
   it("does not match an unrelated path", async () => {
@@ -95,16 +95,14 @@ describe("endpoint: array", () => {
     const res = await fetch(`${url}/api/chat/default?transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.mode).toBe("json");
-    expect(body.total).toBe(3);
+    expect(body.chunks).toHaveLength(3);
   });
 
   it("matches second RegExp item via ?file=", async () => {
     const res = await fetch(`${url}/v2/ai/stream?file=default&transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.mode).toBe("json");
-    expect(body.total).toBe(3);
+    expect(body.chunks).toHaveLength(3);
   });
 
   it("does not match an unrelated path", async () => {
@@ -123,12 +121,11 @@ describe("aiMockPlugin", () => {
     expect(text).toContain("data: {\"delta\":\"hello\"}");
   });
 
-  it("returns JSON mode with transport=json", async () => {
+  it("returns raw JSON with transport=json", async () => {
     const res = await fetch(`${baseUrl}/api/ai/mock/default?transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.mode).toBe("json");
-    expect(body.total).toBe(3);
+    expect(body.chunks).toHaveLength(3);
     expect(body.chunks[0].data.delta).toBe("hello");
   });
 
@@ -136,8 +133,7 @@ describe("aiMockPlugin", () => {
     const res = await fetch(`${baseUrl}/api/ai/mock/i18n/zh-CN?transport=json`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.mode).toBe("json");
-    expect(body.total).toBe(2);
+    expect(body.chunks).toHaveLength(2);
     expect(body.chunks[0].data.lang).toBe("zh-CN");
   });
 

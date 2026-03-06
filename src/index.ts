@@ -365,15 +365,7 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
             console.log("[aiMockPlugin] Handling as JSON response");
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
-            res.end(
-              JSON.stringify({
-                mode: "json",
-                file: path.basename(filePath),
-                total: chunks.length,
-                options,
-                chunks,
-              }),
-            );
+            res.end(JSON.stringify(raw));
             return;
           }
 
