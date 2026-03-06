@@ -87,7 +87,12 @@ function readJsonFile(filePath: string): unknown {
 }
 
 function safeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "");
+  // Allow forward slash for subdirectories, but prevent path traversal
+  return name
+    .replace(/\.\./g, "") // Remove path traversal attempts
+    .replace(/[^a-zA-Z0-9._\-/]/g, "") // Keep / for subdirectories
+    .replace(/\/+/g, "/") // Collapse multiple slashes
+    .replace(/^\/|\/$/g, ""); // Trim leading/trailing slashes
 }
 
 function resolveDataFile(dataDir: string, fileName: string): string {

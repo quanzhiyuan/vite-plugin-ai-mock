@@ -132,6 +132,15 @@ describe("aiMockPlugin", () => {
     expect(body.chunks[0].data.delta).toBe("hello");
   });
 
+  it("supports nested directory paths", async () => {
+    const res = await fetch(`${baseUrl}/api/ai/mock/i18n/zh-CN?transport=json`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.mode).toBe("json");
+    expect(body.total).toBe(2);
+    expect(body.chunks[0].data.lang).toBe("zh-CN");
+  });
+
   it("supports HTTP error injection", async () => {
     const res = await fetch(`${baseUrl}/api/ai/mock/default?httpErrorStatus=401`);
     expect(res.status).toBe(401);

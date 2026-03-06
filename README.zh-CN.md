@@ -290,9 +290,9 @@ const { messages, sendMessage, status } = useChat({
 ```ts
 // string（默认）
 endpoint: "/api/mock/ai";
-// /api/mock/ai        → file = "default"
-// /api/mock/ai/chat   → file = "chat"
-// /api/mock/ai/deepseek   → file = "deepseek"
+// /api/mock/ai              → file = "default"
+// /api/mock/ai/chat         → file = "chat"
+// /api/mock/ai/i18n/zh-CN   → file = "i18n/zh-CN"（多层级目录）
 
 // RegExp
 endpoint: /^\/api\/ai\/.*/;
@@ -302,9 +302,12 @@ endpoint: /^\/api\/ai\/.*/;
 endpoint: ["/api/chat", /^\/v2\/ai\/.*/];
 ```
 
+支持多层级目录。例如 `/api/mock/ai/i18n/zh-CN` 会映射到 `mock/ai/i18n/zh-CN.json`。
+
 - `/api/mock/ai`
 - `/api/mock/ai/<file>`
-- `?file=<file>`
+- `/api/mock/ai/<dir>/<file>`（多层级）
+- `?file=<file>` 或 `?file=<dir>/<file>`
 
 ## 测试
 

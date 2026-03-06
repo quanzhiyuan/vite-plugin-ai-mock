@@ -296,9 +296,9 @@ const { messages, sendMessage, status } = useChat({
 ```ts
 // string (default)
 endpoint: "/api/mock/ai";
-// /api/mock/ai        → file = "default"
-// /api/mock/ai/chat   → file = "chat"
-// /api/mock/ai/deepseek   → file = "deepseek"
+// /api/mock/ai              → file = "default"
+// /api/mock/ai/chat         → file = "chat"
+// /api/mock/ai/i18n/zh-CN   → file = "i18n/zh-CN" (nested directory)
 
 // RegExp
 endpoint: /^\/api\/ai\/.*/;
@@ -308,9 +308,12 @@ endpoint: /^\/api\/ai\/.*/;
 endpoint: ["/api/chat", /^\/v2\/ai\/.*/];
 ```
 
+Nested directories are supported. For example, `/api/mock/ai/i18n/zh-CN` maps to `mock/ai/i18n/zh-CN.json`.
+
 - `/api/mock/ai`
 - `/api/mock/ai/<file>`
-- `?file=<file>`
+- `/api/mock/ai/<dir>/<file>` (nested)
+- `?file=<file>` or `?file=<dir>/<file>`
 
 ## Test
 

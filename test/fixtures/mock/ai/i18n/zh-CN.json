@@ -1,0 +1,6 @@
+{
+  "chunks": [
+    { "id": "1", "data": { "lang": "zh-CN", "text": "你好" } },
+    { "id": "2", "data": { "lang": "zh-CN", "text": "世界" } }
+  ]
+}
