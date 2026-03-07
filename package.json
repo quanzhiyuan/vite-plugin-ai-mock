@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-ai-mock",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A Vite plugin for AI streaming mock (SSE/JSON) with configurable scenarios.",
   "license": "MIT",
   "type": "module",
