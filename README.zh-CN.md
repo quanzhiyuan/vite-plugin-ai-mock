@@ -4,7 +4,7 @@
 
 > [English](./README.md) | 中文
 
-- 从 `mock/ai/*.json` 读取 mock 文件
+- 从 `mock/*.json` 读取 mock 文件
 - 默认返回 SSE 流式响应
 - 使用 `?transport=json` 获取 JSON 格式响应
 - 支持 11 种流式场景，通过请求参数控制
@@ -31,15 +31,15 @@ project/
 │       └── default.json
 ├── src/
 └── vite.config.ts
+```
 
+**请求示例**
 
-
-
-
-
-
-
-
+```ts
+// SSE 流式响应（默认）
+const res = await fetch("/api/chat");
+// JSON 响应
+const json = await fetch("/api/chat?transport=json");
 ```
 
 </td>
@@ -54,14 +54,14 @@ import { aiMockPlugin } from "vite-plugin-ai-mock";
 export default defineConfig({
   plugins: [
     aiMockPlugin({
-      dataDir: "mock/ai",
-      endpoint: "/api/mock/ai",  // /api/mock/ai/chat → chat.json
+      dataDir: "mock",
+      endpoint: "/api",  // /api/chat → chat.json
     }),
   ],
 });
 ```
 
-**mock/ai/chat.json**
+**mock/chat.json**
 
 ```json
 {
@@ -108,20 +108,20 @@ export default defineConfig({
 直接在请求 URL 上附加参数，适合临时调试单个接口：
 
 ```
-/api/mock/ai/default?scenario=jitter
-/api/mock/ai/default?firstChunkDelayMs=1000&errorAt=3
+/api/default?scenario=jitter
+/api/default?firstChunkDelayMs=1000&errorAt=3
 ```
 
 ```ts
 // 默认返回 SSE 流式响应
-const response = await fetch("/api/mock/ai/default?firstChunkDelayMs=4800", {
+const response = await fetch("/api/default?firstChunkDelayMs=4800", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({}),
 });
 
 // 使用 ?transport=json 获取 JSON 格式
-const jsonResponse = await fetch("/api/mock/ai/default?transport=json");
+const jsonResponse = await fetch("/api/default?transport=json");
 ```
 
 **2. 插件选项 `defaultScenario`（全局生效）**
@@ -143,6 +143,23 @@ aiMockPlugin({
 ```
 
 不配置 `defaultScenario` 时，默认使用 `normal` 场景（无延迟，正常完成）。
+
+**3. 插件选项 `jsonApis`（指定返回 JSON 格式的 API）**
+
+在 `vite.config.ts` 中配置，指定哪些 API 路径返回 JSON 格式而不是 SSE 格式：
+
+```ts
+aiMockPlugin({
+  endpoint: "/api",
+  jsonApis: [
+    "/api/config",           // 精确匹配
+    "/api/history",          // 精确匹配
+    /^\/api\/static\/.*/,    // 正则匹配
+  ],
+});
+```
+
+优先级：`?transport=json` / `?transport=sse` > `jsonApis` 配置 > 默认 SSE
 
 ## Mock 文件格式
 
@@ -169,18 +186,18 @@ aiMockPlugin({
 
 ### 主流格式示例
 
-`data` 字段可以完整模拟真实 API 的响应结构。npm 包内置了以下示例文件（位于 `mock/ai/`），可直接复制到项目中使用：
+`data` 字段可以完整模拟真实 API 的响应结构。npm 包内置了以下示例文件（位于 `mock/`），可直接复制到项目中使用：
 
-| 文件                             | 提供商            |
-| -------------------------------- | ----------------- |
-| `mock/ai/openai.json`            | OpenAI / 兼容格式 |
-| `mock/ai/claude.json`            | Anthropic Claude  |
-| `mock/ai/gemini.json`            | Google Gemini     |
-| `mock/ai/deepseek.json`          | DeepSeek          |
-| `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner |
-| `mock/ai/qwen.json`              | 通义千问（阿里）  |
-| `mock/ai/qwen-thinking.json`     | 通义千问 Thinking |
-| `mock/ai/doubao.json`            | 豆包（字节跳动）  |
+| 文件                        | 提供商            |
+| --------------------------- | ----------------- |
+| `mock/openai.json`          | OpenAI / 兼容格式 |
+| `mock/claude.json`          | Anthropic Claude  |
+| `mock/gemini.json`          | Google Gemini     |
+| `mock/deepseek.json`        | DeepSeek          |
+| `mock/deepseek-reasoner.json` | DeepSeek Reasoner |
+| `mock/qwen.json`            | 通义千问（阿里）  |
+| `mock/qwen-thinking.json`   | 通义千问 Thinking |
+| `mock/doubao.json`          | 豆包（字节跳动）  |
 
 **OpenAI / 兼容格式**（`openai.json`）——最后一条 `data` 为字符串 `"[DONE]"`：
 
@@ -272,7 +289,7 @@ import { DefaultChatTransport } from "ai";
 
 const { messages, sendMessage, status } = useChat({
   transport: new DefaultChatTransport({
-    api: "/api/mock/ai/chat",
+    api: "/api/chat",
   }),
 });
 ```
@@ -289,10 +306,10 @@ const { messages, sendMessage, status } = useChat({
 
 ```ts
 // string（默认）
-endpoint: "/api/mock/ai";
-// /api/mock/ai              → file = "default"
-// /api/mock/ai/chat         → file = "chat"
-// /api/mock/ai/i18n/zh-CN   → file = "i18n/zh-CN"（多层级目录）
+endpoint: "/api";
+// /api              → file = "default"
+// /api/chat         → file = "chat"
+// /api/i18n/zh-CN   → file = "i18n/zh-CN"（多层级目录）
 
 // RegExp
 endpoint: /^\/api\/ai\/.*/;
@@ -302,11 +319,11 @@ endpoint: /^\/api\/ai\/.*/;
 endpoint: ["/api/chat", /^\/v2\/ai\/.*/];
 ```
 
-支持多层级目录。例如 `/api/mock/ai/i18n/zh-CN` 会映射到 `mock/ai/i18n/zh-CN.json`。
+支持多层级目录。例如 `/api/i18n/zh-CN` 会映射到 `mock/i18n/zh-CN.json`。
 
-- `/api/mock/ai`
-- `/api/mock/ai/<file>`
-- `/api/mock/ai/<dir>/<file>`（多层级）
+- `/api`
+- `/api/<file>`
+- `/api/<dir>/<file>`（多层级）
 - `?file=<file>` 或 `?file=<dir>/<file>`
 
 ## 测试
@@ -328,3 +345,75 @@ pnpm release:npm
 ```
 
 `prepublishOnly` 会自动执行构建、测试和类型检查。
+
+## 配置选项
+
+### 插件配置 `AiMockPluginOptions`
+
+| 选项 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `dataDir` | `string` | `"mock"` | mock 文件所在目录，相对于项目根目录 |
+| `endpoint` | `string \| RegExp \| (string \| RegExp)[]` | `"/api"` | 拦截的 API 路径，支持字符串、正则或数组 |
+| `defaultScenario` | `DefaultScenarioConfig` | `undefined` | 全局默认场景配置，可被 URL 参数覆盖 |
+| `jsonApis` | `(string \| RegExp)[]` | `undefined` | 指定返回 JSON 格式的 API 路径列表 |
+
+### 场景配置 `DefaultScenarioConfig`
+
+| 选项 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `scenario` | `ScenarioName` | `undefined` | 预设场景名：`normal`、`first-delay`、`jitter`、`disconnect`、`timeout`、`error`、`malformed`、`duplicate`、`out-of-order`、`reconnect`、`heartbeat` |
+| `firstChunkDelayMs` | `number` | `0` | 首个数据块发送前的延迟时间（毫秒） |
+| `minIntervalMs` | `number` | `200` | 数据块之间的最小间隔时间（毫秒） |
+| `maxIntervalMs` | `number` | `700` | 数据块之间的最大间隔时间（毫秒） |
+| `disconnectAt` | `number` | `-1` | 在第 N 个数据块处断开连接（-1 为不断开） |
+| `stallAfter` | `number` | `-1` | 在第 N 个数据块后停止发送（-1 为不停止） |
+| `stallMs` | `number` | `30000` | 停止发送后等待的时间（毫秒） |
+| `errorAt` | `number` | `-1` | 在第 N 个数据块处发送错误事件（-1 为不发送） |
+| `errorMessage` | `string` | `"mock_error"` | 错误事件的消息内容 |
+| `malformedAt` | `number` | `-1` | 在第 N 个数据块处发送格式错误的数据（-1 为不发送） |
+| `duplicateAt` | `number` | `-1` | 在第 N 个数据块处发送重复数据（-1 为不发送） |
+| `outOfOrder` | `boolean` | `false` | 是否打乱数据块顺序（交换第 2、3 块） |
+| `heartbeatMs` | `number` | `0` | 心跳间隔时间（毫秒），0 为不发送心跳 |
+| `reconnect` | `boolean` | `false` | 是否启用重连模式，配合 `lastEventId` 使用 |
+
+### URL 参数
+
+除了上述场景配置参数外，还支持以下 URL 专用参数：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `file` | `string` | `"default"` | 指定 mock 文件名（不含 `.json` 后缀） |
+| `transport` | `"sse" \| "json"` | `"sse"` | 响应格式：`sse` 流式响应，`json` 直接返回 JSON |
+| `httpErrorStatus` | `number` | `0` | 返回指定 HTTP 状态码错误（如 401、500） |
+| `includeDone` | `"true" \| "false"` | `"true"` | 是否在流结束时发送 `done` 事件 |
+| `lastEventId` | `string` | `undefined` | 断线重连时的最后事件 ID，从该 ID 之后继续发送 |
+
+### 完整配置示例
+
+```ts
+import { defineConfig } from "vite";
+import { aiMockPlugin } from "vite-plugin-ai-mock";
+
+export default defineConfig({
+  plugins: [
+    aiMockPlugin({
+      // mock 文件目录
+      dataDir: "mock",
+      // 拦截的 API 路径
+      endpoint: "/api",
+      // 全局默认场景
+      defaultScenario: {
+        scenario: "jitter",
+        firstChunkDelayMs: 500,
+        minIntervalMs: 100,
+        maxIntervalMs: 800,
+      },
+      // 返回 JSON 格式的 API 列表
+      jsonApis: [
+        "/api/config",
+        /^\/api\/static\/.*/,
+      ],
+    }),
+  ],
+});
+```

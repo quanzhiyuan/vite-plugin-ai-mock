@@ -49,6 +49,12 @@ export interface AiMockPluginOptions {
    * @default undefined (uses 'normal' scenario with no preset)
    */
   defaultScenario?: DefaultScenarioConfig;
+  /**
+   * List of API paths that should return JSON format instead of SSE.
+   * Supports string paths and RegExp patterns.
+   * @example ['/api/chat/history', new RegExp('/api/config/.*')]
+   */
+  jsonApis?: (string | RegExp)[];
 }
 
 const AI_MOCK_BASE = "/api/ai/mock";
@@ -247,10 +253,25 @@ function applyChunkMutations(
   return result;
 }
 
-function isSseRequest(reqUrl: URL): boolean {
+function isJsonApi(pathname: string, jsonApis?: (string | RegExp)[]): boolean {
+  if (!jsonApis || jsonApis.length === 0) return false;
+  return jsonApis.some((pattern) => {
+    if (typeof pattern === "string") {
+      return pathname === pattern || pathname.startsWith(`${pattern}/`);
+    }
+    return pattern.test(pathname);
+  });
+}
+
+function isSseRequest(reqUrl: URL, jsonApis?: (string | RegExp)[]): boolean {
   const transport = reqUrl.searchParams.get("transport");
-  // Default to SSE, only use JSON when explicitly requested via transport=json
-  return transport !== "json";
+  // If transport is explicitly set, use that
+  if (transport === "json") return false;
+  if (transport === "sse") return true;
+  // Check if the API is in the jsonApis list
+  if (isJsonApi(reqUrl.pathname, jsonApis)) return false;
+  // Default to SSE
+  return true;
 }
 
 function writeSseEvent(
@@ -303,6 +324,7 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
   const dataDir = config?.dataDir ?? "mock/ai";
   const endpoint: EndpointPattern = config?.endpoint ?? AI_MOCK_BASE;
   const defaultScenario = config?.defaultScenario;
+  const jsonApis = config?.jsonApis;
 
   return {
     name: "vite-plugin-ai-mock",
@@ -361,7 +383,7 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
           const raw = readJsonFile(filePath);
           const chunks = applyChunkMutations(normalizeChunks(raw), options);
 
-          if (!isSseRequest(reqUrl)) {
+          if (!isSseRequest(reqUrl, jsonApis)) {
             console.log("[aiMockPlugin] Handling as JSON response");
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json; charset=utf-8");

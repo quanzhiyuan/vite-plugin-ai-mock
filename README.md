@@ -10,7 +10,7 @@
 
 A standalone Vite plugin for AI scene mocking. Returns streaming data in JSON format, simulating various AI scenarios.
 
-- Reads mock files from `mock/ai/*.json`
+- Reads mock files from `mock/*.json`
 - Returns SSE streaming response by default
 - Use `?transport=json` to get JSON format response
 - Supports 11 streaming scenarios with request parameters
@@ -37,15 +37,15 @@ project/
 │       └── default.json
 ├── src/
 └── vite.config.ts
+```
 
+**Request Example**
 
-
-
-
-
-
-
-
+```ts
+// SSE streaming (default)
+const res = await fetch("/api/chat");
+// JSON response
+const json = await fetch("/api/chat?transport=json");
 ```
 
 </td>
@@ -60,14 +60,14 @@ import { aiMockPlugin } from "vite-plugin-ai-mock";
 export default defineConfig({
   plugins: [
     aiMockPlugin({
-      dataDir: "mock/ai",
-      endpoint: "/api/mock/ai",  // /api/mock/ai/chat → chat.json
+      dataDir: "mock",
+      endpoint: "/api", // /api/chat → chat.json
     }),
   ],
 });
 ```
 
-**mock/ai/chat.json**
+**mock/chat.json**
 
 ```json
 {
@@ -114,20 +114,20 @@ Scenarios can be configured in two ways, in order of precedence:
 Append parameters directly to the request URL, useful for debugging a single endpoint:
 
 ```
-/api/mock/ai/default?scenario=jitter
-/api/mock/ai/default?firstChunkDelayMs=1000&errorAt=3
+/api/default?scenario=jitter
+/api/default?firstChunkDelayMs=1000&errorAt=3
 ```
 
 ```ts
 // Default returns SSE streaming response
-const response = await fetch("/api/mock/ai/default?firstChunkDelayMs=4800", {
+const response = await fetch("/api/default?firstChunkDelayMs=4800", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({}),
 });
 
 // Use ?transport=json to get JSON format
-const jsonResponse = await fetch("/api/mock/ai/default?transport=json");
+const jsonResponse = await fetch("/api/default?transport=json");
 ```
 
 **2. Plugin option `defaultScenario` (global)**
@@ -149,6 +149,23 @@ aiMockPlugin({
 ```
 
 When `defaultScenario` is not set, the `normal` scenario is used (no delay, completes normally).
+
+**3. Plugin option `jsonApis` (specify JSON-returning APIs)**
+
+Configure in `vite.config.ts` to specify which API paths should return JSON format instead of SSE:
+
+```ts
+aiMockPlugin({
+  endpoint: "/api",
+  jsonApis: [
+    "/api/config", // exact match
+    "/api/history", // exact match
+    /^\/api\/static\/.*/, // regex match
+  ],
+});
+```
+
+Precedence: `?transport=json` / `?transport=sse` > `jsonApis` config > default SSE
 
 ## Mock file format
 
@@ -175,18 +192,18 @@ Each file is a JSON object with a `chunks` array. Every chunk maps to one SSE ev
 
 ### Real-world format examples
 
-The `data` field can mirror any real API response. The package ships with ready-to-use examples in `mock/ai/` — copy them into your project as a starting point:
+The `data` field can mirror any real API response. The package ships with ready-to-use examples in `mock/` — copy them into your project as a starting point:
 
-| File                             | Provider            |
-| -------------------------------- | ------------------- |
-| `mock/ai/openai.json`            | OpenAI / compatible |
-| `mock/ai/claude.json`            | Anthropic Claude    |
-| `mock/ai/gemini.json`            | Google Gemini       |
-| `mock/ai/deepseek.json`          | DeepSeek            |
-| `mock/ai/deepseek-reasoner.json` | DeepSeek Reasoner   |
-| `mock/ai/qwen.json`              | Qwen (Alibaba)      |
-| `mock/ai/qwen-thinking.json`     | Qwen Thinking       |
-| `mock/ai/doubao.json`            | Doubao (ByteDance)  |
+| File                        | Provider            |
+| --------------------------- | ------------------- |
+| `mock/openai.json`          | OpenAI / compatible |
+| `mock/claude.json`          | Anthropic Claude    |
+| `mock/gemini.json`          | Google Gemini       |
+| `mock/deepseek.json`        | DeepSeek            |
+| `mock/deepseek-reasoner.json` | DeepSeek Reasoner |
+| `mock/qwen.json`            | Qwen (Alibaba)      |
+| `mock/qwen-thinking.json`   | Qwen Thinking       |
+| `mock/doubao.json`          | Doubao (ByteDance)  |
 
 **OpenAI / compatible** (`openai.json`) — `data` ends with `"[DONE]"` string:
 
@@ -278,7 +295,7 @@ import { DefaultChatTransport } from "ai";
 
 const { messages, sendMessage, status } = useChat({
   transport: new DefaultChatTransport({
-    api: "/api/mock/ai/chat",
+    api: "/api/chat",
   }),
 });
 ```
@@ -295,10 +312,10 @@ const { messages, sendMessage, status } = useChat({
 
 ```ts
 // string (default)
-endpoint: "/api/mock/ai";
-// /api/mock/ai              → file = "default"
-// /api/mock/ai/chat         → file = "chat"
-// /api/mock/ai/i18n/zh-CN   → file = "i18n/zh-CN" (nested directory)
+endpoint: "/api";
+// /api              → file = "default"
+// /api/chat         → file = "chat"
+// /api/i18n/zh-CN   → file = "i18n/zh-CN" (nested directory)
 
 // RegExp
 endpoint: /^\/api\/ai\/.*/;
@@ -308,11 +325,11 @@ endpoint: /^\/api\/ai\/.*/;
 endpoint: ["/api/chat", /^\/v2\/ai\/.*/];
 ```
 
-Nested directories are supported. For example, `/api/mock/ai/i18n/zh-CN` maps to `mock/ai/i18n/zh-CN.json`.
+Nested directories are supported. For example, `/api/i18n/zh-CN` maps to `mock/i18n/zh-CN.json`.
 
-- `/api/mock/ai`
-- `/api/mock/ai/<file>`
-- `/api/mock/ai/<dir>/<file>` (nested)
+- `/api`
+- `/api/<file>`
+- `/api/<dir>/<file>` (nested)
 - `?file=<file>` or `?file=<dir>/<file>`
 
 ## Test
@@ -333,4 +350,73 @@ pnpm build
 pnpm release:npm
 ```
 
-`prepublishOnly` will automatically run build, tests and typecheck..
+`prepublishOnly` will automatically run build, tests and typecheck.
+
+## Configuration Options
+
+### Plugin Options `AiMockPluginOptions`
+
+| Option            | Type                                       | Default          | Description                                                     |
+| ----------------- | ------------------------------------------ | ---------------- | --------------------------------------------------------------- |
+| `dataDir`         | `string`                                   | `"mock"`         | Directory for mock files, relative to project root              |
+| `endpoint`        | `string \| RegExp \| (string \| RegExp)[]` | `"/api"`         | API path to intercept, supports string, RegExp, or array        |
+| `defaultScenario` | `DefaultScenarioConfig`                    | `undefined`      | Global default scenario config, can be overridden by URL params |
+| `jsonApis`        | `(string \| RegExp)[]`                     | `undefined`      | List of API paths that should return JSON format                |
+
+### Scenario Config `DefaultScenarioConfig`
+
+| Option              | Type           | Default        | Description                                                                                                                                                   |
+| ------------------- | -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scenario`          | `ScenarioName` | `undefined`    | Preset scenario name: `normal`, `first-delay`, `jitter`, `disconnect`, `timeout`, `error`, `malformed`, `duplicate`, `out-of-order`, `reconnect`, `heartbeat` |
+| `firstChunkDelayMs` | `number`       | `0`            | Delay before sending first chunk (ms)                                                                                                                         |
+| `minIntervalMs`     | `number`       | `200`          | Minimum interval between chunks (ms)                                                                                                                          |
+| `maxIntervalMs`     | `number`       | `700`          | Maximum interval between chunks (ms)                                                                                                                          |
+| `disconnectAt`      | `number`       | `-1`           | Disconnect at chunk N (-1 to disable)                                                                                                                         |
+| `stallAfter`        | `number`       | `-1`           | Stop sending after chunk N (-1 to disable)                                                                                                                    |
+| `stallMs`           | `number`       | `30000`        | Wait time after stalling (ms)                                                                                                                                 |
+| `errorAt`           | `number`       | `-1`           | Send error event at chunk N (-1 to disable)                                                                                                                   |
+| `errorMessage`      | `string`       | `"mock_error"` | Error event message content                                                                                                                                   |
+| `malformedAt`       | `number`       | `-1`           | Send malformed data at chunk N (-1 to disable)                                                                                                                |
+| `duplicateAt`       | `number`       | `-1`           | Send duplicate chunk at N (-1 to disable)                                                                                                                     |
+| `outOfOrder`        | `boolean`      | `false`        | Shuffle chunk order (swaps chunks 2 and 3)                                                                                                                    |
+| `heartbeatMs`       | `number`       | `0`            | Heartbeat interval (ms), 0 to disable                                                                                                                         |
+| `reconnect`         | `boolean`      | `false`        | Enable reconnect mode, use with `lastEventId`                                                                                                                 |
+
+### URL Parameters
+
+In addition to scenario config params, the following URL-only params are supported:
+
+| Param             | Type                | Default     | Description                                                  |
+| ----------------- | ------------------- | ----------- | ------------------------------------------------------------ |
+| `file`            | `string`            | `"default"` | Mock file name (without `.json` extension)                   |
+| `transport`       | `"sse" \| "json"`   | `"sse"`     | Response format: `sse` for streaming, `json` for direct JSON |
+| `httpErrorStatus` | `number`            | `0`         | Return specified HTTP error status (e.g., 401, 500)          |
+| `includeDone`     | `"true" \| "false"` | `"true"`    | Whether to send `done` event at stream end                   |
+| `lastEventId`     | `string`            | `undefined` | Last event ID for reconnection, resumes after this ID        |
+
+### Full Configuration Example
+
+```ts
+import { defineConfig } from "vite";
+import { aiMockPlugin } from "vite-plugin-ai-mock";
+
+export default defineConfig({
+  plugins: [
+    aiMockPlugin({
+      // Mock file directory
+      dataDir: "mock",
+      // API path to intercept
+      endpoint: "/api",
+      // Global default scenario
+      defaultScenario: {
+        scenario: "jitter",
+        firstChunkDelayMs: 500,
+        minIntervalMs: 100,
+        maxIntervalMs: 800,
+      },
+      // APIs that return JSON format
+      jsonApis: ["/api/config", /^\/api\/static\/.*/],
+    }),
+  ],
+});
+```
