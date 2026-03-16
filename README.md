@@ -8,12 +8,13 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/quanzhiyuan/vite-plugin-ai-mock/ci.yml?label=CI)](https://github.com/quanzhiyuan/vite-plugin-ai-mock/actions)
 [![license](https://img.shields.io/npm/l/vite-plugin-ai-mock)](./LICENSE)
 
-A standalone Vite plugin for AI scene mocking. Returns streaming data in JSON format, simulating various AI scenarios.
+A standalone Vite plugin for AI scene mocking. Supports both JSON and TypeScript mock files, returning SSE streaming or JSON responses to simulate various AI scenarios.
 
-- Reads mock files from `mock/*.json`
+- Reads mock files from `mock/*.json` or `mock/*.ts`
 - Returns SSE streaming response by default
 - Use `?transport=json` to get JSON format response
 - Supports 11 streaming scenarios with request parameters
+- TypeScript mock files support dynamic data and full middleware control — **hot-reloaded without server restart**
 
 ## Install
 
@@ -33,7 +34,8 @@ pnpm add vite-plugin-ai-mock -D
 project/
 ├── mock/
 │   └── ai/
-│       ├── chat.json
+│       ├── chat.json        ← JSON mock
+│       ├── sessions.ts      ← TypeScript mock
 │       └── default.json
 ├── src/
 └── vite.config.ts
@@ -85,6 +87,75 @@ export default defineConfig({
 </table>
 
 > 💡 See full examples: [examples](https://github.com/quanzhiyuan/vite-plugin-ai-mock/tree/main/examples) (includes Ant Design X, Assistant UI, Lobe Chat integrations)
+
+## TypeScript Mock Files
+
+In addition to `.json` files, mock files can be written in TypeScript. `.ts` takes priority over `.json` when both exist.
+
+Three export patterns are supported:
+
+### Pattern 1 — Static default export (same as JSON)
+
+```ts
+// mock/ai/chat.ts
+export default {
+  chunks: [
+    { id: "1", data: { delta: "Hello" } },
+    { id: "2", data: { delta: " World" } },
+  ],
+};
+```
+
+### Pattern 2 — Factory function (called per request)
+
+The function receives the incoming request and can return dynamic data. Supports `async`.
+
+```ts
+// mock/ai/chat.ts
+import type { Connect } from "vite";
+
+export default (req: Connect.IncomingMessage) => {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const lang = url.searchParams.get("lang") ?? "en";
+  return {
+    chunks: [
+      { id: "1", data: { delta: lang === "zh" ? "你好" : "Hello" } },
+    ],
+  };
+};
+```
+
+### Pattern 3 — Handler (full middleware control)
+
+Replaces the need to write a separate `configureServer` plugin. Receives `(req, res, next)` and handles the response directly — ideal for dynamic routes like session create/delete.
+
+```ts
+// mock/ai/session.ts
+import type { MockRequestHandler } from "vite-plugin-ai-mock";
+
+const sessions = new Set<string>();
+
+export const handler: MockRequestHandler = (req, res) => {
+  if (req.method === "POST") {
+    const id = `sess-${Date.now()}`;
+    sessions.add(id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ status: "success", data: { session_id: id } }));
+    return;
+  }
+  if (req.method === "DELETE") {
+    const id = (req.url ?? "").split("/").pop() ?? "";
+    sessions.delete(id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ status: "success" }));
+    return;
+  }
+  res.statusCode = 405;
+  res.end();
+};
+```
+
+**Hot reload**: TypeScript mock files are loaded via Vite's `ssrLoadModule`. Any edit is picked up on the next request — **no server restart required**.
 
 ## Scenarios (11)
 
@@ -169,7 +240,7 @@ Precedence: `?transport=json` / `?transport=sse` > `jsonApis` config > default S
 
 ## Mock file format
 
-Each file is a JSON object with a `chunks` array. Every chunk maps to one SSE event:
+Each mock file is a JSON object (or TypeScript module) with a `chunks` array. Every chunk maps to one SSE event:
 
 | Field     | Type   | Description                                                     |
 | --------- | ------ | --------------------------------------------------------------- |
@@ -356,12 +427,12 @@ pnpm release:npm
 
 ### Plugin Options `AiMockPluginOptions`
 
-| Option            | Type                                       | Default          | Description                                                     |
-| ----------------- | ------------------------------------------ | ---------------- | --------------------------------------------------------------- |
-| `dataDir`         | `string`                                   | `"mock"`         | Directory for mock files, relative to project root              |
-| `endpoint`        | `string \| RegExp \| (string \| RegExp)[]` | `"/api"`         | API path to intercept, supports string, RegExp, or array        |
-| `defaultScenario` | `DefaultScenarioConfig`                    | `undefined`      | Global default scenario config, can be overridden by URL params |
-| `jsonApis`        | `(string \| RegExp)[]`                     | `undefined`      | List of API paths that should return JSON format                |
+| Option            | Type                                       | Default          | Description                                                                               |
+| ----------------- | ------------------------------------------ | ---------------- | ----------------------------------------------------------------------------------------- |
+| `dataDir`         | `string`                                   | `"mock"`         | Directory for mock files (`.json` or `.ts`), relative to project root                    |
+| `endpoint`        | `string \| RegExp \| (string \| RegExp)[]` | `"/api"`         | API path to intercept, supports string, RegExp, or array                                  |
+| `defaultScenario` | `DefaultScenarioConfig`                    | `undefined`      | Global default scenario config, can be overridden by URL params                           |
+| `jsonApis`        | `(string \| RegExp)[]`                     | `undefined`      | List of API paths that should return JSON format (applies to both `.json` and `.ts` files)|
 
 ### Scenario Config `DefaultScenarioConfig`
 

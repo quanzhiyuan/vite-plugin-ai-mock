@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Plugin } from "vite";
+import type { Connect, Plugin, ViteDevServer } from "vite";
 
 type ChunkValue = string | number | boolean | Record<string, unknown> | null;
 
@@ -40,6 +40,39 @@ interface ScenarioOptions {
 
 export type EndpointPattern = string | RegExp | (string | RegExp)[];
 
+/**
+ * Handler function type for TypeScript mock files.
+ * Export `handler` from your `.ts` mock file to take full control of the response.
+ *
+ * @example
+ * // mock/sessions.ts
+ * import type { MockRequestHandler } from 'vite-plugin-ai-mock'
+ *
+ * export const handler: MockRequestHandler = (req, res) => {
+ *   res.setHeader('Content-Type', 'application/json')
+ *   res.end(JSON.stringify({ data: [] }))
+ * }
+ */
+export type MockRequestHandler = (
+  req: Connect.IncomingMessage,
+  res: import("node:http").ServerResponse,
+  next: Connect.NextFunction,
+) => void | Promise<void>;
+
+/**
+ * The shape that a TypeScript mock module can export.
+ *
+ * Three patterns are supported:
+ *
+ * 1. `export default <data>` — static data, same as JSON
+ * 2. `export default (req) => <data>` — factory called per request, supports async
+ * 3. `export const handler = (req, res, next) => ...` — raw middleware, full control
+ */
+export interface MockModule {
+  default?: unknown | ((req: Connect.IncomingMessage) => unknown | Promise<unknown>);
+  handler?: MockRequestHandler;
+}
+
 export interface AiMockPluginOptions {
   dataDir?: string;
   endpoint?: EndpointPattern;
@@ -75,9 +108,10 @@ const SCENARIO_PRESETS = {
 
 export type ScenarioName = keyof typeof SCENARIO_PRESETS;
 
-export interface DefaultScenarioConfig extends Partial<
-  Omit<ScenarioOptions, "file" | "lastEventId" | "includeDone">
-> {
+export interface DefaultScenarioConfig
+  extends Partial<
+    Omit<ScenarioOptions, "file" | "lastEventId" | "includeDone">
+  > {
   scenario?: ScenarioName;
 }
 
@@ -93,30 +127,77 @@ function readJsonFile(filePath: string): unknown {
 }
 
 function safeFileName(name: string): string {
-  // Allow forward slash for subdirectories, but prevent path traversal
   return name
-    .replace(/\.\./g, "") // Remove path traversal attempts
-    .replace(/[^a-zA-Z0-9._\-/]/g, "") // Keep / for subdirectories
-    .replace(/\/+/g, "/") // Collapse multiple slashes
-    .replace(/^\/|\/$/g, ""); // Trim leading/trailing slashes
+    .replace(/\.\./g, "")
+    .replace(/[^a-zA-Z0-9._\-/]/g, "")
+    .replace(/\/+/g, "/")
+    .replace(/^\/|\/$/g, "");
 }
 
-function resolveDataFile(dataDir: string, fileName: string): string {
+interface ResolvedDataFile {
+  filePath: string;
+  type: "json" | "ts";
+}
+
+function resolveDataFile(dataDir: string, fileName: string): ResolvedDataFile {
   const safeName = safeFileName(fileName) || "default";
   const absoluteDataDir = path.resolve(process.cwd(), dataDir);
-  const candidate = safeName.endsWith(".json")
-    ? path.join(absoluteDataDir, safeName)
-    : path.join(absoluteDataDir, `${safeName}.json`);
 
-  if (!candidate.startsWith(absoluteDataDir)) {
-    throw new Error("Invalid mock file path.");
+  // Strip any explicit extension so we can try both
+  const baseName = safeName.replace(/\.(json|ts)$/, "");
+
+  const candidates: Array<{ filePath: string; type: "json" | "ts" }> = [
+    // .ts takes priority so dynamic mock can shadow a JSON file
+    { filePath: path.join(absoluteDataDir, `${baseName}.ts`), type: "ts" },
+    { filePath: path.join(absoluteDataDir, `${baseName}.json`), type: "json" },
+  ];
+
+  // If user supplied an explicit extension, honour it and push it to the front
+  if (safeName.endsWith(".ts")) {
+    candidates.unshift({ filePath: path.join(absoluteDataDir, safeName), type: "ts" });
+  } else if (safeName.endsWith(".json")) {
+    candidates.unshift({ filePath: path.join(absoluteDataDir, safeName), type: "json" });
   }
 
-  if (!fs.existsSync(candidate)) {
-    throw new Error(`Mock data file not found: ${path.basename(candidate)}`);
+  for (const candidate of candidates) {
+    if (!candidate.filePath.startsWith(absoluteDataDir)) continue; // path traversal guard
+    if (fs.existsSync(candidate.filePath)) return candidate;
   }
 
-  return candidate;
+  throw new Error(
+    `Mock data file not found: tried ${baseName}.ts and ${baseName}.json in "${dataDir}"`,
+  );
+}
+
+/**
+ * Load a TypeScript mock module via Vite's ssrLoadModule.
+ *
+ * Because ssrLoadModule goes through Vite's module graph, file changes are
+ * automatically picked up on the next request — no server restart needed.
+ */
+async function loadTsMockModule(
+  server: ViteDevServer,
+  absoluteFilePath: string,
+): Promise<MockModule> {
+  // Invalidate so the latest version is always used
+  const existingMod = server.moduleGraph.getModuleById(absoluteFilePath);
+  if (existingMod) {
+    server.moduleGraph.invalidateModule(existingMod);
+  }
+
+  // Build a URL that Vite's module resolver understands:
+  // - files inside the vite root: relative URL  e.g. /mock/ai/sessions.ts
+  // - files outside the root: use /@fs/ prefix
+  const viteRoot = server.config.root;
+  let moduleUrl: string;
+  if (absoluteFilePath.startsWith(viteRoot)) {
+    moduleUrl =
+      "/" + path.relative(viteRoot, absoluteFilePath).replace(/\\/g, "/");
+  } else {
+    moduleUrl = "/@fs/" + absoluteFilePath;
+  }
+
+  return (await server.ssrLoadModule(moduleUrl)) as MockModule;
 }
 
 function normalizeChunks(raw: unknown): NormalizedChunk[] {
@@ -154,13 +235,11 @@ function parseScenarioOptions(
 ): ScenarioOptions {
   const params = reqUrl.searchParams;
 
-  // Determine effective scenario: URL param > defaultScenario.scenario > none
   const presetName =
     (params.get("scenario") as ScenarioName | null) ??
     defaultScenario?.scenario;
   const preset = presetName ? (SCENARIO_PRESETS[presetName] ?? {}) : {};
 
-  // Helper to get value from URL param > defaultScenario > preset
   const getParam = (
     paramName: keyof ScenarioOptions,
     fallback: number | string | boolean,
@@ -184,8 +263,8 @@ function parseScenarioOptions(
   };
 
   const firstChunkDelayMs = getParam("firstChunkDelayMs", 0) as number;
-  let minIntervalMs = getParam("minIntervalMs", 200) as number;
-  let maxIntervalMs = getParam("maxIntervalMs", 700) as number;
+  const minIntervalMs = getParam("minIntervalMs", 200) as number;
+  const maxIntervalMs = getParam("maxIntervalMs", 700) as number;
 
   return {
     file: params.get("file") ?? "default",
@@ -265,19 +344,14 @@ function isJsonApi(pathname: string, jsonApis?: (string | RegExp)[]): boolean {
 
 function isSseRequest(reqUrl: URL, jsonApis?: (string | RegExp)[]): boolean {
   const transport = reqUrl.searchParams.get("transport");
-  // If transport is explicitly set, use that
   if (transport === "json") return false;
   if (transport === "sse") return true;
-  // Check if the API is in the jsonApis list
   if (isJsonApi(reqUrl.pathname, jsonApis)) return false;
-  // Default to SSE
   return true;
 }
 
 function writeSseEvent(
-  res: {
-    write: (chunk: string) => void;
-  },
+  res: { write: (chunk: string) => void },
   options: { id?: string; event?: string; data: unknown },
 ): void {
   if (options.id) res.write(`id: ${options.id}\n`);
@@ -316,8 +390,132 @@ function matchEndpoint(
       return { fileFromPath: pathname.slice(endpoint.length + 1) };
     return null;
   }
-  // RegExp: fileFromPath falls back to empty string, relies on ?file= param
   return endpoint.test(pathname) ? { fileFromPath: "" } : null;
+}
+
+function streamChunks(
+  req: Connect.IncomingMessage,
+  res: import("node:http").ServerResponse,
+  chunks: NormalizedChunk[],
+  options: ScenarioOptions,
+): void {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  if ("flushHeaders" in res && typeof res.flushHeaders === "function") {
+    (res as { flushHeaders: () => void }).flushHeaders();
+  }
+
+  let closed = false;
+  let heartbeatTimer: NodeJS.Timeout | null = null;
+  const pendingTimers = new Set<NodeJS.Timeout>();
+
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    for (const timer of pendingTimers) clearTimeout(timer);
+    pendingTimers.clear();
+  };
+
+  req.on("close", cleanup);
+
+  if (options.heartbeatMs > 0) {
+    heartbeatTimer = setInterval(() => {
+      if (closed) return;
+      res.write(`: ping ${Date.now()}\n\n`);
+    }, options.heartbeatMs);
+  }
+
+  const schedule = (task: () => void, delay: number) => {
+    const timer = setTimeout(() => {
+      pendingTimers.delete(timer);
+      task();
+    }, delay);
+    pendingTimers.add(timer);
+  };
+
+  const writeChunk = (chunk: NormalizedChunk, index: number) => {
+    if (closed) return;
+    const chunkNo = index + 1;
+
+    if (options.disconnectAt === chunkNo) {
+      cleanup();
+      if ("destroy" in res && typeof res.destroy === "function") {
+        (res as { destroy: () => void }).destroy();
+        return;
+      }
+      res.end();
+      return;
+    }
+
+    if (options.errorAt === chunkNo) {
+      writeSseEvent(res, {
+        id: chunk.id,
+        event: "error",
+        data: { message: options.errorMessage, at: chunkNo },
+      });
+      cleanup();
+      res.end();
+      return;
+    }
+
+    if (options.malformedAt === chunkNo) {
+      res.write(`id: ${chunk.id}\n`);
+      res.write("event: message\n");
+      res.write('data: {"malformed": true\n\n');
+    } else {
+      writeSseEvent(res, {
+        id: chunk.id,
+        event: chunk.event,
+        data: chunk.data,
+      });
+    }
+
+    if (options.stallAfter === chunkNo) {
+      schedule(() => {
+        if (!closed) {
+          cleanup();
+          res.end();
+        }
+      }, options.stallMs);
+      return;
+    }
+
+    const nextChunk = chunks[index + 1];
+    if (!nextChunk) {
+      if (options.includeDone) {
+        writeSseEvent(res, { event: "done", data: { done: true } });
+      }
+      cleanup();
+      res.end();
+      return;
+    }
+
+    const interval =
+      typeof nextChunk.delayMs === "number"
+        ? nextChunk.delayMs
+        : options.minIntervalMs +
+          Math.floor(
+            Math.random() *
+              (options.maxIntervalMs - options.minIntervalMs + 1),
+          );
+
+    schedule(() => writeChunk(nextChunk, index + 1), interval);
+  };
+
+  if (chunks.length === 0) {
+    if (options.includeDone) {
+      writeSseEvent(res, { event: "done", data: { done: true } });
+    }
+    cleanup();
+    res.end();
+    return;
+  }
+
+  schedule(() => writeChunk(chunks[0], 0), options.firstChunkDelayMs);
 }
 
 export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
@@ -329,16 +527,10 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
   return {
     name: "vite-plugin-ai-mock",
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
+      server.middlewares.use(async (req, res, next) => {
         if (!req.url) return next();
         const reqUrl = new URL(req.url, "http://localhost");
         const matched = matchEndpoint(reqUrl.pathname, endpoint);
-
-        if (req.url.startsWith("/api")) {
-          console.log("[aiMockPlugin] Request:", req.method, req.url);
-          console.log("[aiMockPlugin] Configured endpoint:", endpoint);
-          console.log("[aiMockPlugin] Matched:", matched);
-        }
 
         if (matched === null) return next();
         const fileFromPath = matched.fileFromPath;
@@ -357,10 +549,6 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
 
         try {
           if (options.httpErrorStatus >= 400) {
-            console.log(
-              "[aiMockPlugin] Returning HTTP error:",
-              options.httpErrorStatus,
-            );
             res.statusCode = options.httpErrorStatus;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
             res.end(
@@ -372,150 +560,68 @@ export function aiMockPlugin(config?: AiMockPluginOptions): Plugin {
             return;
           }
 
-          const filePath = resolveDataFile(dataDir, options.file);
-          console.log("[aiMockPlugin] Resolving mock file:", filePath);
+          const resolved = resolveDataFile(dataDir, options.file);
 
-          if (!fs.existsSync(filePath)) {
-            console.error("[aiMockPlugin] Mock file not found:", filePath);
-            // Let it throw or handle it
+          // ── TypeScript mock file ──────────────────────────────────────────
+          if (resolved.type === "ts") {
+            const mod = await loadTsMockModule(server, resolved.filePath);
+
+            // Pattern 3: export const handler = (req, res, next) => ...
+            if (typeof mod.handler === "function") {
+              await mod.handler(req, res, next);
+              return;
+            }
+
+            // Pattern 1 & 2: export default <data> | (req) => <data>
+            if ("default" in mod) {
+              const raw =
+                typeof mod.default === "function"
+                  ? await (mod.default as (req: Connect.IncomingMessage) => unknown)(req)
+                  : mod.default;
+
+              if (!isSseRequest(reqUrl, jsonApis)) {
+                res.statusCode = 200;
+                res.setHeader("Content-Type", "application/json; charset=utf-8");
+                res.end(JSON.stringify(raw));
+                return;
+              }
+
+              const chunks = applyChunkMutations(normalizeChunks(raw), options);
+              streamChunks(req, res, chunks, options);
+              return;
+            }
+
+            res.statusCode = 500;
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(
+              JSON.stringify({
+                error: "mock_empty_module",
+                message: `Mock file "${resolved.filePath}" must have a default export or a named "handler" export.`,
+              }),
+            );
+            return;
           }
 
-          const raw = readJsonFile(filePath);
-          const chunks = applyChunkMutations(normalizeChunks(raw), options);
+          // ── JSON mock file (original behaviour) ──────────────────────────
+          const raw = readJsonFile(resolved.filePath);
 
           if (!isSseRequest(reqUrl, jsonApis)) {
-            console.log("[aiMockPlugin] Handling as JSON response");
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
             res.end(JSON.stringify(raw));
             return;
           }
 
-          console.log("[aiMockPlugin] Handling as SSE stream");
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-          res.setHeader("Cache-Control", "no-cache, no-transform");
-          res.setHeader("Connection", "keep-alive");
-          res.setHeader("X-Accel-Buffering", "no");
-          if ("flushHeaders" in res && typeof res.flushHeaders === "function") {
-            res.flushHeaders();
-          }
-
-          let closed = false;
-          let heartbeatTimer: NodeJS.Timeout | null = null;
-          const pendingTimers = new Set<NodeJS.Timeout>();
-
-          const cleanup = () => {
-            if (closed) return;
-            closed = true;
-            if (heartbeatTimer) clearInterval(heartbeatTimer);
-            for (const timer of pendingTimers) clearTimeout(timer);
-            pendingTimers.clear();
-          };
-
-          req.on("close", cleanup);
-
-          if (options.heartbeatMs > 0) {
-            heartbeatTimer = setInterval(() => {
-              if (closed) return;
-              res.write(`: ping ${Date.now()}\n\n`);
-            }, options.heartbeatMs);
-          }
-
-          const schedule = (task: () => void, delay: number) => {
-            const timer = setTimeout(() => {
-              pendingTimers.delete(timer);
-              task();
-            }, delay);
-            pendingTimers.add(timer);
-          };
-
-          const writeChunk = (chunk: NormalizedChunk, index: number) => {
-            if (closed) return;
-            const chunkNo = index + 1;
-
-            if (options.disconnectAt === chunkNo) {
-              cleanup();
-              if ("destroy" in res && typeof res.destroy === "function") {
-                res.destroy();
-                return;
-              }
-              res.end();
-              return;
-            }
-
-            if (options.errorAt === chunkNo) {
-              writeSseEvent(res, {
-                id: chunk.id,
-                event: "error",
-                data: { message: options.errorMessage, at: chunkNo },
-              });
-              cleanup();
-              res.end();
-              return;
-            }
-
-            if (options.malformedAt === chunkNo) {
-              res.write(`id: ${chunk.id}\n`);
-              res.write("event: message\n");
-              res.write('data: {"malformed": true\n\n');
-            } else {
-              writeSseEvent(res, {
-                id: chunk.id,
-                event: chunk.event,
-                data: chunk.data,
-              });
-            }
-
-            if (options.stallAfter === chunkNo) {
-              schedule(() => {
-                if (!closed) {
-                  cleanup();
-                  res.end();
-                }
-              }, options.stallMs);
-              return;
-            }
-
-            const nextChunk = chunks[index + 1];
-            if (!nextChunk) {
-              if (options.includeDone) {
-                writeSseEvent(res, { event: "done", data: { done: true } });
-              }
-              cleanup();
-              res.end();
-              return;
-            }
-
-            const interval =
-              typeof nextChunk.delayMs === "number"
-                ? nextChunk.delayMs
-                : options.minIntervalMs +
-                  Math.floor(
-                    Math.random() *
-                      (options.maxIntervalMs - options.minIntervalMs + 1),
-                  );
-
-            schedule(() => writeChunk(nextChunk, index + 1), interval);
-          };
-
-          if (chunks.length === 0) {
-            if (options.includeDone) {
-              writeSseEvent(res, { event: "done", data: { done: true } });
-            }
-            cleanup();
-            res.end();
-            return;
-          }
-
-          schedule(() => writeChunk(chunks[0], 0), options.firstChunkDelayMs);
+          const chunks = applyChunkMutations(normalizeChunks(raw), options);
+          streamChunks(req, res, chunks, options);
         } catch (error) {
           res.statusCode = 500;
           res.setHeader("Content-Type", "application/json; charset=utf-8");
           res.end(
             JSON.stringify({
               error: "mock_server_error",
-              message: error instanceof Error ? error.message : "Unknown error",
+              message:
+                error instanceof Error ? error.message : "Unknown error",
             }),
           );
         }

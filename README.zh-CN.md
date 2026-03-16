@@ -1,13 +1,14 @@
 # vite-plugin-ai-mock
 
-一个用于 AI 场景模拟的独立 Vite 插件。可以返回 JSON 格式的流式数据，模拟不同的 AI 场景。
+一个用于 AI 场景模拟的独立 Vite 插件。支持 JSON 和 TypeScript 两种 mock 文件格式，返回 SSE 流式或 JSON 响应，模拟不同的 AI 场景。
 
 > [English](./README.md) | 中文
 
-- 从 `mock/*.json` 读取 mock 文件
+- 从 `mock/*.json` 或 `mock/*.ts` 读取 mock 文件
 - 默认返回 SSE 流式响应
 - 使用 `?transport=json` 获取 JSON 格式响应
 - 支持 11 种流式场景，通过请求参数控制
+- TypeScript mock 文件支持动态数据和完整中间件控制——**修改后无需重启服务**
 
 ## 安装
 
@@ -27,7 +28,8 @@ pnpm add vite-plugin-ai-mock -D
 project/
 ├── mock/
 │   └── ai/
-│       ├── chat.json
+│       ├── chat.json        ← JSON mock
+│       ├── sessions.ts      ← TypeScript mock
 │       └── default.json
 ├── src/
 └── vite.config.ts
@@ -79,6 +81,75 @@ export default defineConfig({
 </table>
 
 > 💡 查看完整示例：[examples](https://github.com/quanzhiyuan/vite-plugin-ai-mock/tree/main/examples)（包含 Ant Design X、Assistant UI、Lobe Chat 等集成示例）
+
+## TypeScript Mock 文件
+
+除 `.json` 外，mock 文件可以用 TypeScript 编写。当同名 `.ts` 和 `.json` 文件同时存在时，`.ts` 优先。
+
+支持三种 export 模式：
+
+### 模式一 — 静态 default export（等同于 JSON）
+
+```ts
+// mock/ai/chat.ts
+export default {
+  chunks: [
+    { id: "1", data: { delta: "你好" } },
+    { id: "2", data: { delta: "世界" } },
+  ],
+};
+```
+
+### 模式二 — 工厂函数（每次请求都会调用）
+
+函数接收请求对象，可返回动态数据。支持 `async`。
+
+```ts
+// mock/ai/chat.ts
+import type { Connect } from "vite";
+
+export default (req: Connect.IncomingMessage) => {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const lang = url.searchParams.get("lang") ?? "en";
+  return {
+    chunks: [
+      { id: "1", data: { delta: lang === "zh" ? "你好" : "Hello" } },
+    ],
+  };
+};
+```
+
+### 模式三 — Handler（完全控制 req/res）
+
+替代在 `vite.config.ts` 中单独编写 `configureServer` 插件。接收 `(req, res, next)`，直接控制响应——适用于会话创建/删除等动态路由。
+
+```ts
+// mock/ai/session.ts
+import type { MockRequestHandler } from "vite-plugin-ai-mock";
+
+const sessions = new Set<string>();
+
+export const handler: MockRequestHandler = (req, res) => {
+  if (req.method === "POST") {
+    const id = `sess-${Date.now()}`;
+    sessions.add(id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ status: "success", data: { session_id: id } }));
+    return;
+  }
+  if (req.method === "DELETE") {
+    const id = (req.url ?? "").split("/").pop() ?? "";
+    sessions.delete(id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ status: "success" }));
+    return;
+  }
+  res.statusCode = 405;
+  res.end();
+};
+```
+
+**热更新**：TypeScript mock 文件通过 Vite 的 `ssrLoadModule` 加载。每次修改后，下一个请求即可生效，**无需重启开发服务器**。
 
 ## 场景（11 种）
 
@@ -163,7 +234,7 @@ aiMockPlugin({
 
 ## Mock 文件格式
 
-每个文件是一个包含 `chunks` 数组的 JSON 对象，每个 chunk 对应一条 SSE 事件：
+每个 mock 文件（JSON 或 TypeScript）包含一个 `chunks` 数组，每个 chunk 对应一条 SSE 事件：
 
 | 字段      | 类型   | 说明                                                |
 | --------- | ------ | --------------------------------------------------- |
@@ -352,10 +423,10 @@ pnpm release:npm
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `dataDir` | `string` | `"mock"` | mock 文件所在目录，相对于项目根目录 |
+| `dataDir` | `string` | `"mock"` | mock 文件目录（支持 `.json` 和 `.ts`），相对于项目根目录 |
 | `endpoint` | `string \| RegExp \| (string \| RegExp)[]` | `"/api"` | 拦截的 API 路径，支持字符串、正则或数组 |
 | `defaultScenario` | `DefaultScenarioConfig` | `undefined` | 全局默认场景配置，可被 URL 参数覆盖 |
-| `jsonApis` | `(string \| RegExp)[]` | `undefined` | 指定返回 JSON 格式的 API 路径列表 |
+| `jsonApis` | `(string \| RegExp)[]` | `undefined` | 指定返回 JSON 格式的 API 路径（对 `.json` 和 `.ts` 均生效）|
 
 ### 场景配置 `DefaultScenarioConfig`
 
